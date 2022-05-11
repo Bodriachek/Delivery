@@ -28,7 +28,7 @@ class Driver(models.Model):
 
     @property
     def get_mileage(self):
-        orders = self.orders.filter()
+        orders = self.orders.filter(status=Order.STATUS_DONE)
         r = 0
         for order in orders:
             r += order.total_distance
@@ -81,17 +81,17 @@ class Cars(models.Model):
 
 
 class Order(models.Model):
-    NEW = 'Нова заявка'
-    IN_PROCESSING = 'В обробці'
-    PREPARE_TO_SHIP = 'Очікує погрузку'
-    DONE = 'Завершено'
+    STATUS_NEW = 1
+    STATUS_IN_PROCESSING = 2
+    STATUS_PREPARE_TO_SHIP = 3
+    STATUS_DONE = 4
     STATUS_CHOICES = (
-        (NEW, 'Нова заявка'),
-        (IN_PROCESSING, 'В обробці'),
-        (PREPARE_TO_SHIP, 'Очікує погрузку'),
-        (DONE, 'Завершено')
+        (STATUS_NEW, 'Нова заявка'),
+        (STATUS_IN_PROCESSING, 'В обробці'),
+        (STATUS_PREPARE_TO_SHIP, 'Очікує погрузку'),
+        (STATUS_DONE, 'Завершено')
     )
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=NEW, verbose_name='Статус заявки')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_NEW, verbose_name='Статус заявки')
     product = models.CharField(max_length=255, null=True, verbose_name='Що бажаєте замовити на доставку?')
     manager = models.ForeignKey(Manager, on_delete=models.CASCADE, verbose_name='Менеджер', null=True)
     car = models.ForeignKey(Cars, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=False),
