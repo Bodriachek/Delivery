@@ -1,24 +1,22 @@
 from datetime import datetime
 
-from django.db import models
 from django.db.models import Q
+from pyparsing import Or
 from rest_framework import permissions, viewsets
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from .serializers import CreateOrderSerializer, OrderListSerializer, RegisterRefuelingSerializer, \
     RefuelingListSerializer, AddRepairSerializer, RepairsSerializer, DriverListSerializer, ManagerListSerializer, \
     CarListSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .service import OrderFilter, RefuelingListFilter, DriversListFilter, ManagerListFilter, CarsListFilter
-from .models import Order, RegistrationRefueling, Cars, Driver
+from .models import Driver, Order, RegistrationRefueling, Car
 
 
 class OrderViewSet(viewsets.ModelViewSet):
     """ Список та створення замовлень """
     queryset = Order.objects.filter(
-        Q(status=2) |
-        Q(status=3)
+        Q(status=Order.STATUS_IN_PROCESSING) |
+        Q(status=Order.STATUS_PREPARE_TO_SHIP)
     )
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = (DjangoFilterBackend,)
@@ -54,7 +52,7 @@ class RefuelingViewSet(viewsets.ModelViewSet):
 class RepairsViewSet(viewsets.ModelViewSet):
     """ Ремонти """
     permission_classes = [permissions.IsAdminUser]
-    queryset = Cars.objects.filter(is_repair=True)
+    queryset = Car.objects.filter(is_repair=True)
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -66,7 +64,7 @@ class RepairsViewSet(viewsets.ModelViewSet):
 
 
 class DriversViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Order.objects.filter(status=4)
+    queryset = Order.objects.filter(status=Order.STATUS_DONE)
         # .order_by('driver__mileage')
     permission_classes = [permissions.IsAdminUser]
     serializer_class = DriverListSerializer
@@ -76,8 +74,8 @@ class DriversViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ManagerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Order.objects.filter(
-        Q(status=3) |
-        Q(status=4)
+        Q(status=Order.STATUS_PREPARE_TO_SHIP) |
+        Q(status=Order.STATUS_DONE)
     )
     permission_classes = [permissions.IsAdminUser]
     serializer_class = ManagerListSerializer
@@ -86,7 +84,7 @@ class ManagerViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CarsViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Cars.objects.filter(is_repair=False).order_by('load_capacity')
+    queryset = Car.objects.filter(is_repair=False).order_by('load_capacity')
     permission_classes = [permissions.IsAdminUser]
     serializer_class = CarListSerializer
     filter_backends = (DjangoFilterBackend,)
@@ -94,7 +92,12 @@ class CarsViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DriversListViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Cars.objects.all()
+    queryset = Car.objects.all()
     permission_classes = [permissions.IsAdminUser]
     serializer_class = DriverListSerializer
 
+
+class DriverViewSet(viewsets.ModelViewSet):
+    serializer_class = DriverListSerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Driver.objects.all()

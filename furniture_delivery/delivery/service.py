@@ -1,6 +1,6 @@
 from django.db import transaction
 from django_filters import rest_framework as filters
-from .models import Order, RegistrationRefueling, Cars, Driver
+from .models import Order, RegistrationRefueling, Car, Driver
 
 
 class CharFilterInFilter(filters.BaseInFilter, filters.CharFilter):
@@ -53,5 +53,5 @@ class CarsListFilter(filters.FilterSet):
 
 
     class Meta:
-        model = Cars
+        model = Car
         fields = ['load_capacity', 'width', 'length', 'height']

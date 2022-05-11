@@ -1,5 +1,6 @@
+from django import views
+from delivery.models import Order, RegistrationRefueling, Car
 from rest_framework import serializers
-from delivery.models import Order, RegistrationRefueling, Driver, Cars
 
 
 class DriverListSerializer(serializers.ModelSerializer):
@@ -17,7 +18,6 @@ class ManagerListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ('manager',)
-
 
 
 class CreateOrderSerializer(serializers.ModelSerializer):
@@ -45,6 +45,7 @@ class RegisterRefuelingSerializer(serializers.ModelSerializer):
     """ Для реєстрації заправок """
     driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
     car = serializers.SlugRelatedField(slug_field='title', read_only=True)
+
     class Meta:
         model = RegistrationRefueling
         fields = '__all__'
@@ -64,25 +65,24 @@ class RefuelingListSerializer(serializers.ModelSerializer):
 class AddRepairSerializer(serializers.ModelSerializer):
     """ Список ремонтів """
 
-    # responsible_driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    # driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
     class Meta:
-        model = Cars
+        model = Car
         fields = ('title', 'what_repair', 'deadline', 'cost')
 
 
 class RepairsSerializer(serializers.ModelSerializer):
     """ Список ремонтів """
-    responsible_driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
     class Meta:
-        model = Cars
-        fields = ('responsible_driver', 'title', 'what_repair', 'deadline', 'cost')
+        model = Car
+        fields = ('driver', 'title', 'what_repair', 'deadline', 'cost')
 
 
 class CarListSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Cars
+        model = Car
         fields = ('title', 'load_capacity')
-

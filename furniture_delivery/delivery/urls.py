@@ -1,8 +1,14 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework import routers
 
 from . import views
 
+router = routers.SimpleRouter()
+
+router.register('driver', views.DriverViewSet, basename='driver')
+
 urlpatterns = [
+    path('', include(router.urls)),
     # Список замовлень
     path('order/', views.OrderViewSet.as_view({'get': 'list'})),
     # Для оформлення замовлення
