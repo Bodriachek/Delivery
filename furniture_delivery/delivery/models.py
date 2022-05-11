@@ -91,7 +91,8 @@ class Order(models.Model):
         (STATUS_PREPARE_TO_SHIP, 'Очікує погрузку'),
         (STATUS_DONE, 'Завершено')
     )
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default=STATUS_NEW, verbose_name='Статус заявки')
+    status = models.IntegerField(max_length=30, choices=STATUS_CHOICES,
+                                 default=STATUS_NEW, verbose_name='Статус заявки')
     product = models.CharField(max_length=255, null=True, verbose_name='Що бажаєте замовити на доставку?')
     manager = models.ForeignKey(Manager, on_delete=models.CASCADE, verbose_name='Менеджер', null=True)
     car = models.ForeignKey(Cars, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=False),

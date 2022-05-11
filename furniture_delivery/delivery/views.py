@@ -17,8 +17,8 @@ from .models import Order, RegistrationRefueling, Cars, Driver
 class OrderViewSet(viewsets.ModelViewSet):
     """ Список та створення замовлень """
     queryset = Order.objects.filter(
-        Q(status='В обробці') |
-        Q(status='Очікує погрузку')
+        Q(status=2) |
+        Q(status=3)
     )
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = (DjangoFilterBackend,)
@@ -66,7 +66,7 @@ class RepairsViewSet(viewsets.ModelViewSet):
 
 
 class DriversViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Order.objects.filter(status='Завершено')
+    queryset = Order.objects.filter(status=4)
         # .order_by('driver__mileage')
     permission_classes = [permissions.IsAdminUser]
     serializer_class = DriverListSerializer
@@ -76,8 +76,8 @@ class DriversViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ManagerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Order.objects.filter(
-        Q(status='Очікує погрузку') |
-        Q(status='Завершено')
+        Q(status=3) |
+        Q(status=4)
     )
     permission_classes = [permissions.IsAdminUser]
     serializer_class = ManagerListSerializer
