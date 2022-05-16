@@ -1,5 +1,5 @@
 from django.contrib import admin
-from delivery.models import Order, RegistrationRefueling, Driver, Car, Manager
+from delivery.models import Order, Fueling, Driver, Car, Manager, Repair
 
 
 @admin.register(Order)
@@ -9,14 +9,8 @@ class OrderAdmin(admin.ModelAdmin):
     list_display_links = ('id', 'status', 'product')
 
 
-@admin.register(Driver)
-class DriverAdmin(admin.ModelAdmin):
-    """Замовлення"""
-    list_display = ('id', 'user', 'categories')
-    list_display_links = ('id', 'user')
-
-
-# admin.site.register(Customer)
-admin.site.register(RegistrationRefueling)
+admin.site.register(Repair)
+admin.site.register(Driver)
+admin.site.register(Fueling)
 admin.site.register(Car)
 admin.site.register(Manager)

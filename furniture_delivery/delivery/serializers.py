@@ -1,88 +1,108 @@
 from django import views
-from delivery.models import Order, RegistrationRefueling, Car
+from django.contrib.auth.models import User
+from rest_auth.registration.serializers import RegisterSerializer
+from django.utils.translation import gettext_lazy as _
+from rest_framework.templatetags.rest_framework import data
+
+from delivery.models import Order, Fueling, Car, Repair, Driver
 from rest_framework import serializers
 
 
-class DriverListSerializer(serializers.ModelSerializer):
-    # driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    mileage = serializers.CharField(read_only=True)
+class CreateOrderSerializer(serializers.ModelSerializer):
+    """ Add order for customer """
+    class Meta:
+        model = Order
+        exclude = ('id', 'status', 'manager', 'car', 'driver', 'total_distance')
+
+
+class ChangeOrderSerializer(serializers.ModelSerializer):
+    """ Change and list order for staff """
 
     class Meta:
         model = Order
-        fields = ('driver', 'mileage')
+        fields = '__all__'
 
 
 class ManagerListSerializer(serializers.ModelSerializer):
-    manager = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
     class Meta:
         model = Order
         fields = ('manager',)
 
 
-class CreateOrderSerializer(serializers.ModelSerializer):
-    """ Для оформлення замовлення """
+class RepairListSerializer(serializers.ModelSerializer):
+    """ Список ремонтів """
     class Meta:
-        model = Order
-        exclude = (
-            'status', 'manager', 'car', 'driver', 'total_distance', 'amount_trip'
-        )
-
-
-class OrderListSerializer(serializers.ModelSerializer):
-    """ Список замовлень """
-    driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    manager = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    car = serializers.SlugRelatedField(slug_field='title', read_only=True)
-    order_status = serializers.SlugRelatedField(slug_field='status', read_only=True)
-
-    class Meta:
-        model = Order
-        fields = '__all__'
-
-
-class RegisterRefuelingSerializer(serializers.ModelSerializer):
-    """ Для реєстрації заправок """
-    driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    car = serializers.SlugRelatedField(slug_field='title', read_only=True)
-
-    class Meta:
-        model = RegistrationRefueling
-        fields = '__all__'
-
-
-class RefuelingListSerializer(serializers.ModelSerializer):
-    """ Список заправок """
-    fuel = serializers.SlugRelatedField(slug_field='type_fuel', read_only=True)
-
-    class Meta:
-        model = RegistrationRefueling
-        exclude = (
-            'driver', 'car', 'fuel_check'
-        )
+        model = Repair
+        fields = ('car', 'what_repair', 'deadline', 'cost')
+        read_only_fields = ('car', 'what_repair', 'deadline', 'cost')
 
 
 class AddRepairSerializer(serializers.ModelSerializer):
     """ Список ремонтів """
+    class Meta:
+        model = Repair
+        fields = '__all__'
 
-    # driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+class AddFuelingSerializer(serializers.ModelSerializer):
+    """ For register refueling """
+    def validate(self, data):
+        # check type fuel
+        if data['type_fuel'] != data['car'].type_fuel:
+            raise serializers.ValidationError(_('Wrong fuel type'))
+        # check amount fuel to tank size
+        elif data['amount_fuel'] > data['car'].tank_size:
+            raise serializers.ValidationError(_(f"The tank holds the maximum {data['car'].tank_size}"))
+        return data
 
     class Meta:
-        model = Car
-        fields = ('title', 'what_repair', 'deadline', 'cost')
-
-
-class RepairsSerializer(serializers.ModelSerializer):
-    """ Список ремонтів """
-    driver = serializers.SlugRelatedField(slug_field='name', read_only=True)
-
-    class Meta:
-        model = Car
-        fields = ('driver', 'title', 'what_repair', 'deadline', 'cost')
+        model = Fueling
+        fields = '__all__'
 
 
 class CarListSerializer(serializers.ModelSerializer):
+    mileage = serializers.CharField(read_only=True)
 
     class Meta:
         model = Car
-        fields = ('title', 'load_capacity')
+        fields = '__all__'
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+
+
+class DriverSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = Driver
+        fields = '__all__'
+
+
+class DriverListSerializer(serializers.ModelSerializer):
+    driver = serializers.SerializerMethodField()
+    car = CarListSerializer()
+
+    class Meta:
+        model = Order
+        fields = ('id', 'driver', 'car')
+
+    def get_driver(self, obj):
+        return UserSerializer(obj.driver.user).data
+
+
+class FuelingSerializer(serializers.ModelSerializer):
+    driver = serializers.SerializerMethodField()
+    car = CarListSerializer()
+
+    class Meta:
+        model = Fueling
+        fields = '__all__'
+
+    def get_driver(self, obj):
+        return UserSerializer(obj.driver.user).data

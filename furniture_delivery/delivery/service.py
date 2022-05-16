@@ -1,15 +1,9 @@
-from django.db import transaction
 from django_filters import rest_framework as filters
-from .models import Order, RegistrationRefueling, Car, Driver
-
-
-class CharFilterInFilter(filters.BaseInFilter, filters.CharFilter):
-    pass
+from .models import Order, Fueling, Car
 
 
 class OrderFilter(filters.FilterSet):
     # Фільтр, для відображення замовлень конкретного водія з різними статусами
-    driver = filters.BaseInFilter(field_name='driver__name')
     date_trip = filters.DateRangeFilter()
 
     class Meta:
@@ -18,17 +12,12 @@ class OrderFilter(filters.FilterSet):
 
 
 class RefuelingListFilter(filters.FilterSet):
-    driver = filters.BaseInFilter(field_name='driver__name')
-    date_refueling = filters.DateRangeFilter()
-
     class Meta:
-        model = RegistrationRefueling
-        fields = ['driver', 'date_refueling']
+        model = Fueling
+        fields = ['driver', 'created']
 
 
 class DriversListFilter(filters.FilterSet):
-    car = filters.BaseInFilter(field_name='car__title')
-    manager = filters.BaseInFilter(field_name='manager__name')
     date_trip = filters.DateRangeFilter()
 
     class Meta:
@@ -37,7 +26,6 @@ class DriversListFilter(filters.FilterSet):
 
 
 class ManagerListFilter(filters.FilterSet):
-    driver = filters.BaseInFilter(field_name='driver__name')
     date_trip = filters.DateRangeFilter()
 
     class Meta:
@@ -47,11 +35,11 @@ class ManagerListFilter(filters.FilterSet):
 
 class CarsListFilter(filters.FilterSet):
     load_capacity = filters.RangeFilter()
-    width = filters.RangeFilter()
-    length = filters.RangeFilter()
-    height = filters.RangeFilter()
+    width_trunk = filters.RangeFilter()
+    length_trunk = filters.RangeFilter()
+    height_trunk = filters.RangeFilter()
 
 
     class Meta:
         model = Car
-        fields = ['load_capacity', 'width', 'length', 'height']
+        fields = ['load_capacity', 'width_trunk', 'length_trunk', 'height_trunk']

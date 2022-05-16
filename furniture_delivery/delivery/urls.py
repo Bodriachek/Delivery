@@ -3,32 +3,31 @@ from rest_framework import routers
 
 from . import views
 
+app_name = 'delivery'
+
 router = routers.SimpleRouter()
 
-router.register('driver', views.DriverViewSet, basename='driver')
+# For change order, for staff
+router.register('order', views.OrderViewSet, basename='order')
+# Refueling list and change
+router.register('fueling/list', views.FuelingViewSet, basename='list_fueling'),
+# List repairs
+router.register('repairs', views.RepairsViewSet, basename='list_repairs'),
+router.register('driver/repair', views.DriverCarRepairViewSet, basename='list_driver_car_repairs'),
+# Drivers list task 4,5
+router.register('drivers', views.DriverListViewSet, basename='drivers_list'),
+# Managers list for task 6
+router.register('managers', views.ManagerViewSet, basename='managers_list'),
+# Cars list for task 7
+router.register('cars', views.CarsViewSet, basename='cars_list'),
+
 
 urlpatterns = [
     path('', include(router.urls)),
-    # Список замовлень
-    path('order/', views.OrderViewSet.as_view({'get': 'list'})),
-    # Для оформлення замовлення
-    path('order/<int:pk>/', views.OrderViewSet.as_view({'get': 'retrieve', 'post': 'create'})),
-    # Для прийому заявки менеджером
-    path('order/change/<int:pk>/', views.OrderViewSet.as_view({'get': 'retrieve', 'put': 'update'})),
-    # Список заправок
-    path('fueling/', views.RefuelingViewSet.as_view({'get': 'list'})),
-    # Для реєстрації заправок
-    path('fueling/<int:pk>/', views.RefuelingViewSet.as_view({'get': 'retrieve', 'post': 'create'})),
-    # Список ремонтів
-    path('repairs/', views.RepairsViewSet.as_view({'get': 'list'})),
-    # Для додавання деталей про ремонт
-    path('repairs/<int:pk>/', views.RepairsViewSet.as_view({'get': 'retrieve', 'post': 'create'})),
-    # Список водіїв для завдань 4 та 5
-    path('drivers/', views.DriversViewSet.as_view({'get': 'list'})),
-    # Список менеджерів для завдання 6
-    path('managers/', views.ManagerViewSet.as_view({'get': 'list'})),
-    # Список авто для завдання 7
-    path('cars/', views.CarsViewSet.as_view({'get': 'list'})),
-    #
-    path('drivers/detail/', views.DriversListViewSet.as_view({'get': 'list'})),
+    # Add repair
+    path('repair/add', views.AddRepairView.as_view()),
+    # Add order
+    path('order/add', views.CreateOrderView.as_view()),
+    # Add fueling
+    path('fueling/add', views.AddFuelingView.as_view()),
 ]
