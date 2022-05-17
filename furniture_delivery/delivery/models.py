@@ -10,7 +10,7 @@ class Manager(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user.first_name
+        return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
 
 
 class Driver(models.Model):
@@ -30,7 +30,7 @@ class Driver(models.Model):
         return sum(distances)
 
     def __str__(self):
-        return self.user.first_name
+        return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
 
 
 class Car(models.Model):
@@ -38,10 +38,26 @@ class Car(models.Model):
     state_number = models.CharField(max_length=10, null=True)
     driver_class = models.PositiveIntegerField(choices=Driver.DRIVER_CLASS_CHOICES, default=Driver.DRIVER_CLASS_B)
     driver = models.OneToOneField(Driver, on_delete=models.CASCADE)
-    load_capacity = models.FloatField(help_text='In kilograms')
-    width_trunk = models.FloatField(help_text='In meters')
-    length_trunk = models.FloatField(help_text='In meters')
-    height_trunk = models.FloatField(help_text='In meters')
+    load_capacity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In kilograms'
+    )
+    width_trunk = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In meters'
+    )
+    length_trunk = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In meters'
+    )
+    height_trunk = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In meters'
+    )
 
     # ПАЛИВО
     GASOLINE = 1
@@ -55,8 +71,15 @@ class Car(models.Model):
     )
 
     type_fuel = models.PositiveSmallIntegerField(choices=TYPE_OF_FUEL_CHOICES)
-    tank_size = models.FloatField(null=True, help_text='In liters')
-    fuel_consumption = models.FloatField(null=True)
+    tank_size = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In liters'
+    )
+    fuel_consumption = models.DecimalField(
+        max_digits=12,
+        decimal_places=2
+    )
 
     # РЕМОНТ
     is_repair = models.BooleanField(default=False)
@@ -67,7 +90,7 @@ class Car(models.Model):
         return sum(distances)
 
     def __str__(self):
-        return self.title
+        return f'Id {self.id}: {self.title}'
 
 
 class Repair(models.Model):
@@ -76,45 +99,54 @@ class Repair(models.Model):
     )
     what_repair = models.CharField(max_length=200)
     deadline = models.DateField(default=timezone.now())
-    cost = models.PositiveIntegerField(blank=True, null=True, help_text='In UAH')
+    cost = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In UAH')
 
 
 class Order(models.Model):
     STATUS_NEW = 1
-    STATUS_IN_PROCESSING = 2
-    STATUS_PREPARE_TO_SHIP = 3
-    STATUS_DONE = 4
+    STATUS_PREPARE_TO_SHIP = 2
+    STATUS_DONE = 3
 
     STATUS_CHOICES = (
         (STATUS_NEW, 'NEW'),
-        (STATUS_IN_PROCESSING, 'IN PROCESSING'),
         (STATUS_PREPARE_TO_SHIP, 'PREPARE TO SHIP'),
         (STATUS_DONE, 'DONE')
     )
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
-    product = models.CharField(max_length=255, null=True)
-    manager = models.ForeignKey(Manager, on_delete=models.CASCADE, null=True)
+    product = models.CharField(max_length=255)
+    manager = models.ForeignKey(Manager, on_delete=models.CASCADE, related_name='orders')
     car = models.ForeignKey(
-        Car, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=False), blank=True, null=True,
+        Car, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=False),
         related_name='orders', unique_for_date='date_trip'
     )
     driver = models.ForeignKey(
-        Driver, on_delete=models.CASCADE, blank=True,
-        related_name='orders', null=True, unique_for_date='date_trip'
+        Driver, on_delete=models.CASCADE,
+        related_name='orders', unique_for_date='date_trip'
     )
-    name = models.CharField(max_length=255, blank=True, null=True)
+    name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20, default='+380')
-    address = models.CharField(max_length=255, blank=True, null=True,)
+    address = models.CharField(max_length=255)
     date_trip = models.DateField(default=timezone.now())
-    total_distance = models.FloatField(default=0, help_text='In kilometers')
+    total_distance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In kilometers'
+    )
 
 
 class Fueling(TimeStampedModel):
     driver = models.ForeignKey(Driver, on_delete=models.CASCADE, null=True)
     car = models.ForeignKey(Car, on_delete=models.CASCADE, null=True, related_name='car')
     type_fuel = models.CharField(max_length=20, choices=Car.TYPE_OF_FUEL_CHOICES, null=True)
-    amount_fuel = models.FloatField(help_text='In liters', null=True)
+    amount_fuel = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text='In liters'
+    )
     price = models.DecimalField(
         max_digits=12,
         decimal_places=2,

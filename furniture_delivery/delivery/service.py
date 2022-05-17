@@ -1,5 +1,9 @@
 from django_filters import rest_framework as filters
-from .models import Order, Fueling, Car
+from .models import Order, Fueling, Car, Manager, Driver
+
+
+class CharFilterInFilter(filters.BaseInFilter, filters.CharFilter):
+    pass
 
 
 class OrderFilter(filters.FilterSet):
@@ -18,19 +22,17 @@ class RefuelingListFilter(filters.FilterSet):
 
 
 class DriversListFilter(filters.FilterSet):
-    date_trip = filters.DateRangeFilter()
 
     class Meta:
-        model = Order
-        fields = ['car', 'manager', 'date_trip']
+        model = Driver
+        fields = ['orders__car', 'orders__manager']
 
 
 class ManagerListFilter(filters.FilterSet):
-    date_trip = filters.DateRangeFilter()
 
     class Meta:
-        model = Order
-        fields = ['driver', 'date_trip']
+        model = Manager
+        fields = ['orders__driver']
 
 
 class CarsListFilter(filters.FilterSet):
