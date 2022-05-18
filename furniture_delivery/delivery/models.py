@@ -118,13 +118,13 @@ class Order(models.Model):
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
     product = models.CharField(max_length=255)
-    manager = models.ForeignKey(Manager, on_delete=models.CASCADE, related_name='orders')
+    manager = models.ForeignKey(Manager, on_delete=models.PROTECT, related_name='orders')
     car = models.ForeignKey(
-        Car, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=False),
+        Car, on_delete=models.PROTECT, limit_choices_to=Q(is_repair=False),
         related_name='orders', unique_for_date='date_trip'
     )
     driver = models.ForeignKey(
-        Driver, on_delete=models.CASCADE,
+        Driver, on_delete=models.PROTECT,
         related_name='orders', unique_for_date='date_trip'
     )
     name = models.CharField(max_length=255)

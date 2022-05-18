@@ -54,7 +54,14 @@ class ShortCarListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Car
-        fields = ('title', 'state_number')
+        fields = ('title', 'state_number', 'width_trunk', 'length_trunk', 'height_trunk')
+
+
+class CarListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Car
+        fields = '__all__'
 
 
 class ManagerSerializer(serializers.ModelSerializer):
@@ -74,11 +81,24 @@ class DriverSerializer(serializers.ModelSerializer):
         fields = ('user', 'mileage')
 
 
-class OrderSerializer(serializers.ModelSerializer):
-    """ Change and list order for staff """
-    manager = ManagerSerializer()
-    driver = DriverSerializer()
-    car = ShortCarListSerializer()
+class StaffOrderSerializer(serializers.ModelSerializer):
+    """ Create and update order for staff """
+    def validate(self, data):
+        # check type fuel
+        if str(data['car'].driver_class) not in data['driver'].driver_class:
+            raise serializers.ValidationError(_("This driver can't drive this car"))
+        return data
+
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+
+class OrderListSerializer(serializers.ModelSerializer):
+    """ List order for staff """
+    manager = ManagerSerializer(read_only=True)
+    driver = DriverSerializer(read_only=True)
+    car = ShortCarListSerializer(read_only=True)
 
     class Meta:
         model = Order
@@ -117,4 +137,11 @@ class CreateOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         exclude = ('id', 'status', 'manager', 'car', 'driver', 'total_distance')
+
+
+class CarSizeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Car
+        fields = ('width_trunk', 'length_trunk', 'height_trunk')
 

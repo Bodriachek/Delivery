@@ -30,3 +30,11 @@ def car(driver):
 def order(driver, car):
     return baker.make(Order, driver=driver, car=car)
 
+
+@pytest.fixture(scope='session')
+def django_db_setup(django_db_setup, django_db_blocker):
+    with django_db_blocker.unblock():
+        baker.make(
+            User, is_superuser=True, username='top_management', email='topMan@example.com', name='Top Manager'
+        )
+

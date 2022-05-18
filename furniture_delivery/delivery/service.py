@@ -41,7 +41,6 @@ class CarsListFilter(filters.FilterSet):
     length_trunk = filters.RangeFilter()
     height_trunk = filters.RangeFilter()
 
-
     class Meta:
         model = Car
         fields = ['load_capacity', 'width_trunk', 'length_trunk', 'height_trunk']

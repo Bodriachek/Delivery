@@ -7,8 +7,8 @@ app_name = 'delivery'
 
 router = routers.SimpleRouter()
 
-# Order list for staff/ create and update
-router.register('orders', views.OrderListViewSet, basename='order'),
+# Future orders list
+router.register('orders', views.OrderListViewSet, basename='orders'),
 # Refueling list and change
 router.register('fueling/list', views.FuelingViewSet, basename='list_fueling'),
 # List repairs
@@ -18,8 +18,8 @@ router.register('repairs-now', views.DriverCarRepairViewSet, basename='list_driv
 router.register('drivers', views.DriverListViewSet, basename='drivers_list'),
 # Managers list for task 6
 router.register('managers', views.ManagerViewSet, basename='managers_list'),
-# Cars list for task 7
-router.register('cars', views.CarsViewSet, basename='cars_list'),
+# # Cars list for task 7
+router.register('cars/old-version', views.CarsViewSet, basename='cars_list'),
 
 
 urlpatterns = [
@@ -27,7 +27,10 @@ urlpatterns = [
     # Add repair
     path('repair/add/', views.AddRepairView.as_view()),
     # Add order
-    path('order-add/', views.CreateOrderView.as_view()),
+    path('order-add/', views.AddOrderView.as_view()),
+    # Staff create order
+    path('staff-order', views.StaffOrderView.as_view()),
     # Add fueling
     path('fueling-add/', views.AddFuelingView.as_view()),
+    path('cars/', views.CarsListView.as_view()),
 ]
