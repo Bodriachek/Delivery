@@ -1,0 +1,354 @@
+Index: furniture_delivery/delivery/models.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/delivery/models.py b/furniture_delivery/delivery/models.py
+--- a/furniture_delivery/delivery/models.py	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/delivery/models.py	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -118,13 +118,13 @@
+ 
+     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
+     product = models.CharField(max_length=255)
+-    manager = models.ForeignKey(Manager, on_delete=models.CASCADE, related_name='orders')
++    manager = models.ForeignKey(Manager, on_delete=models.PROTECT, related_name='orders')
+     car = models.ForeignKey(
+-        Car, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=False),
++        Car, on_delete=models.PROTECT, limit_choices_to=Q(is_repair=False),
+         related_name='orders', unique_for_date='date_trip'
+     )
+     driver = models.ForeignKey(
+-        Driver, on_delete=models.CASCADE,
++        Driver, on_delete=models.PROTECT,
+         related_name='orders', unique_for_date='date_trip'
+     )
+     name = models.CharField(max_length=255)
+Index: furniture_delivery/delivery/serializers.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/delivery/serializers.py b/furniture_delivery/delivery/serializers.py
+--- a/furniture_delivery/delivery/serializers.py	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/delivery/serializers.py	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -54,7 +54,14 @@
+ 
+     class Meta:
+         model = Car
+-        fields = ('title', 'state_number')
++        fields = ('title', 'state_number', 'width_trunk', 'length_trunk', 'height_trunk')
++
++
++class CarListSerializer(serializers.ModelSerializer):
++
++    class Meta:
++        model = Car
++        fields = '__all__'
+ 
+ 
+ class ManagerSerializer(serializers.ModelSerializer):
+@@ -74,11 +81,24 @@
+         fields = ('user', 'mileage')
+ 
+ 
+-class OrderSerializer(serializers.ModelSerializer):
+-    """ Change and list order for staff """
+-    manager = ManagerSerializer()
+-    driver = DriverSerializer()
+-    car = ShortCarListSerializer()
++class StaffOrderSerializer(serializers.ModelSerializer):
++    """ Create and update order for staff """
++    def validate(self, data):
++        # check type fuel
++        if str(data['car'].driver_class) not in data['driver'].driver_class:
++            raise serializers.ValidationError(_("This driver can't drive this car"))
++        return data
++
++    class Meta:
++        model = Order
++        fields = '__all__'
++
++
++class OrderListSerializer(serializers.ModelSerializer):
++    """ List order for staff """
++    manager = ManagerSerializer(read_only=True)
++    driver = DriverSerializer(read_only=True)
++    car = ShortCarListSerializer(read_only=True)
+ 
+     class Meta:
+         model = Order
+@@ -118,3 +138,10 @@
+         model = Order
+         exclude = ('id', 'status', 'manager', 'car', 'driver', 'total_distance')
+ 
++
++class CarSizeSerializer(serializers.ModelSerializer):
++
++    class Meta:
++        model = Car
++        fields = ('width_trunk', 'length_trunk', 'height_trunk')
++
+Index: furniture_delivery/delivery/service.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/delivery/service.py b/furniture_delivery/delivery/service.py
+--- a/furniture_delivery/delivery/service.py	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/delivery/service.py	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -41,7 +41,6 @@
+     length_trunk = filters.RangeFilter()
+     height_trunk = filters.RangeFilter()
+ 
+-
+     class Meta:
+         model = Car
+         fields = ['load_capacity', 'width_trunk', 'length_trunk', 'height_trunk']
+Index: furniture_delivery/delivery/tests/conftest.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/delivery/tests/conftest.py b/furniture_delivery/delivery/tests/conftest.py
+--- a/furniture_delivery/delivery/tests/conftest.py	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/delivery/tests/conftest.py	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -30,3 +30,11 @@
+ def order(driver, car):
+     return baker.make(Order, driver=driver, car=car)
+ 
++
++@pytest.fixture(scope='session')
++def django_db_setup(django_db_setup, django_db_blocker):
++    with django_db_blocker.unblock():
++        baker.make(
++            User, is_superuser=True, username='top_management', email='topMan@example.com', name='Top Manager'
++        )
++
+Index: furniture_delivery/delivery/tests/tests.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/delivery/tests/tests.py b/furniture_delivery/delivery/tests/tests.py
+--- a/furniture_delivery/delivery/tests/tests.py	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/delivery/tests/tests.py	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -6,19 +6,19 @@
+ 
+ def test_add_order(api_client):
+     # api_client.force_login()
+-    resp = api_client.get('/api/v1/order/')
++    resp = api_client.get('/api/v1/orders/')
+     assert resp.status_code == status.HTTP_200_OK
+     assert resp.data == []
+ 
+-    resp = api_client.post('/api/v1/order/add/',
+-    {
+-        "product": "Chair",
+-        "name": "Petro",
+-        "phone": "777",
+-        "address": "Dim",
+-        "date_trip": None
+-    }
+-    )
++    resp = api_client.post('/api/v1/order-add/',
++                           {
++                               "product": "Chair",
++                               "name": "Petro",
++                               "phone": "777",
++                               "address": "Dim",
++                               "date_trip": None
++                           }
++                           )
+     assert resp.status_code == status.HTTP_201_CREATED
+     data = resp.data
+ 
+@@ -35,7 +35,7 @@
+     }
+ 
+     resp = api_client.patch(
+-        f'/api/v1/order/{order_id}/', dict(product="Table")
++        f'/api/v1/orders/{order_id}/', dict(product="Table")
+     )
+     assert resp.status_code == status.HTTP_200_OK
+     data = resp.data
+Index: furniture_delivery/delivery/urls.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/delivery/urls.py b/furniture_delivery/delivery/urls.py
+--- a/furniture_delivery/delivery/urls.py	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/delivery/urls.py	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -7,8 +7,8 @@
+ 
+ router = routers.SimpleRouter()
+ 
+-# Order list for staff/ create and update
+-router.register('orders', views.OrderListViewSet, basename='order'),
++# Future orders list
++router.register('orders', views.OrderListViewSet, basename='orders'),
+ # Refueling list and change
+ router.register('fueling/list', views.FuelingViewSet, basename='list_fueling'),
+ # List repairs
+@@ -18,8 +18,8 @@
+ router.register('drivers', views.DriverListViewSet, basename='drivers_list'),
+ # Managers list for task 6
+ router.register('managers', views.ManagerViewSet, basename='managers_list'),
+-# Cars list for task 7
+-router.register('cars', views.CarsViewSet, basename='cars_list'),
++# # Cars list for task 7
++router.register('cars/old-version', views.CarsViewSet, basename='cars_list'),
+ 
+ 
+ urlpatterns = [
+@@ -27,7 +27,10 @@
+     # Add repair
+     path('repair/add/', views.AddRepairView.as_view()),
+     # Add order
+-    path('order-add/', views.CreateOrderView.as_view()),
++    path('order-add/', views.AddOrderView.as_view()),
++    # Staff create order
++    path('staff-order', views.StaffOrderView.as_view()),
+     # Add fueling
+     path('fueling-add/', views.AddFuelingView.as_view()),
++    path('cars/', views.CarsListView.as_view()),
+ ]
+Index: furniture_delivery/delivery/views.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/delivery/views.py b/furniture_delivery/delivery/views.py
+--- a/furniture_delivery/delivery/views.py	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/delivery/views.py	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -2,18 +2,27 @@
+ from django.utils import timezone
+ from rest_framework import permissions, viewsets, generics
+ from rest_framework.filters import OrderingFilter
++from rest_framework.response import Response
++from rest_framework.views import APIView
+ 
+ from .serializers import (
+     CreateOrderSerializer, FuelingSerializer, DriverListSerializer, ManagerListSerializer,
+-    ShortCarListSerializer, OrderSerializer, AddFuelingSerializer, RepairListSerializer, AddRepairSerializer,
+-    DriverSerializer, AddDriverSerializer
++    ShortCarListSerializer, OrderListSerializer, AddFuelingSerializer, RepairListSerializer, AddRepairSerializer,
++    DriverSerializer, AddDriverSerializer, StaffOrderSerializer, CarListSerializer, CarSizeSerializer
+ )
+ from django_filters.rest_framework import DjangoFilterBackend
+ from .service import OrderFilter, RefuelingListFilter, DriversListFilter, ManagerListFilter, CarsListFilter
+ from .models import Order, Fueling, Car, Repair, Driver, Manager
+ 
+ 
+-class CreateOrderView(generics.CreateAPIView):
++class StaffOrderView(generics.CreateAPIView):
++    """ Add order for customer """
++    queryset = Order.objects.filter(status=Order.STATUS_NEW)
++    permission_classes = (permissions.AllowAny,)
++    serializer_class = StaffOrderSerializer
++
++
++class AddOrderView(generics.CreateAPIView):
+     """ Add order for customer """
+     queryset = Order.objects.filter(status=Order.STATUS_NEW)
+     permission_classes = (permissions.AllowAny,)
+@@ -24,7 +33,7 @@
+     """ Change order, for staff """
+     queryset = Order.objects.filter(status=Order.STATUS_PREPARE_TO_SHIP)
+     permission_classes = [permissions.IsAdminUser]
+-    serializer_class = OrderSerializer
++    serializer_class = OrderListSerializer
+     filter_backends = (DjangoFilterBackend,)
+     filterset_class = OrderFilter
+ 
+@@ -33,7 +42,7 @@
+     queryset = Driver.objects.all()
+     permission_classes = [permissions.IsAdminUser]
+     serializer_class = DriverListSerializer
+-    filter_backends = (DjangoFilterBackend)
++    filter_backends = (DjangoFilterBackend,)
+     # filter_backends = (DjangoFilterBackend, OrderingFilter)
+     filterset_class = DriversListFilter
+     # ordering_fields = ['mileage']
+@@ -97,3 +106,15 @@
+     filterset_class = CarsListFilter
+ 
+ 
++class CarsListView(APIView):
++
++    def get(self, request, *args, **kwargs):
++        cars = Car.objects.all()
++        for key, value in CarSizeSerializer().data.items():
++            pass
++
++        serializer = CarSizeSerializer(cars, many=True)
++
++        return Response(serializer.data)
++
++
+Index: furniture_delivery/requirements.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/furniture_delivery/requirements.txt b/furniture_delivery/requirements.txt
+--- a/furniture_delivery/requirements.txt	(revision 9d8e0e9bfb2a63b08cf9a2e65dfb0c69ba1225a8)
++++ b/furniture_delivery/requirements.txt	(revision 36564f17c3c5cd0ddd2c8b31e917d9ddff68a299)
+@@ -1,31 +1,49 @@
++allure-python-commons==2.9.45
+ asgiref==3.5.1
++attrs==21.4.0
+ certifi==2021.10.8
+ cffi==1.15.0
+ charset-normalizer==2.0.12
+ coreapi==2.3.3
+ coreschema==0.0.4
++coverage==6.3.3
+ cryptography==37.0.2
+ defusedxml==0.7.1
+ Django==3.2.1
+ django-allauth==0.50.0
++django-coverage-plugin==2.0.3
+ django-crispy-forms==1.14.0
+ django-extensions==3.1.5
+ django-filter==21.1
++django-model-utils==4.2.0
+ django-multiselectfield==0.1.12
+ django-rest-auth==0.9.5
++django-test-plus==2.2.0
+ djangorestframework==3.13.1
+ drf-yasg==1.20.0
++flake8==4.0.1
+ idna==3.3
+ inflection==0.5.1
++iniconfig==1.1.1
+ itypes==1.2.0
+ Jinja2==3.1.2
+ MarkupSafe==2.1.1
++mccabe==0.6.1
++model-bakery==1.5.0
+ oauthlib==3.2.0
+ packaging==21.3
+ Pillow==9.1.0
++pluggy==1.0.0
++py==1.11.0
++pycodestyle==2.8.0
+ pycparser==2.21
++pyflakes==2.4.0
+ PyJWT==2.3.0
+ pyparsing==3.0.8
++pytest==7.1.2
++pytest-cov==3.0.0
++pytest-django==4.5.2
++pytest-sugar==0.9.4
+ python3-openid==3.2.0
+ pytz==2022.1
+ requests==2.27.1
+@@ -34,5 +52,7 @@
+ ruamel.yaml.clib==0.2.6
+ six==1.16.0
+ sqlparse==0.4.2
++termcolor==1.1.0
++tomli==2.0.1
+ uritemplate==4.1.1
+ urllib3==1.26.9
