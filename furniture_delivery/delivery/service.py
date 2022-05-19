@@ -1,9 +1,5 @@
 from django_filters import rest_framework as filters
-from .models import Order, Fueling, Car, Manager, Driver
-
-
-class CharFilterInFilter(filters.BaseInFilter, filters.CharFilter):
-    pass
+from .models import Order, Fueling, Manager, Driver
 
 
 class OrderFilter(filters.FilterSet):
@@ -34,13 +30,3 @@ class ManagerListFilter(filters.FilterSet):
         model = Manager
         fields = ['orders__driver']
 
-
-class CarsListFilter(filters.FilterSet):
-    load_capacity = filters.RangeFilter()
-    width_trunk = filters.RangeFilter()
-    length_trunk = filters.RangeFilter()
-    height_trunk = filters.RangeFilter()
-
-    class Meta:
-        model = Car
-        fields = ['load_capacity', 'width_trunk', 'length_trunk', 'height_trunk']

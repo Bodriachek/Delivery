@@ -9,7 +9,7 @@ class RepairListSerializer(serializers.ModelSerializer):
     """ Список ремонтів """
     class Meta:
         model = Repair
-        fields = ('car', 'what_repair', 'deadline', 'cost')
+        fields = ('id', 'car', 'what_repair', 'deadline', 'cost')
         read_only_fields = ('car', 'what_repair', 'deadline', 'cost')
 
 
@@ -40,7 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email')
+        fields = ('id', 'first_name', 'last_name', 'email')
 
 
 class AddDriverSerializer(serializers.ModelSerializer):
@@ -54,7 +54,7 @@ class ShortCarListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Car
-        fields = ('title', 'state_number', 'width_trunk', 'length_trunk', 'height_trunk')
+        fields = ('id', 'title', 'state_number', 'width_trunk', 'length_trunk', 'height_trunk')
 
 
 class CarListSerializer(serializers.ModelSerializer):
@@ -69,7 +69,7 @@ class ManagerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Manager
-        fields = ('user',)
+        fields = ('id', 'user',)
 
 
 class DriverSerializer(serializers.ModelSerializer):
@@ -78,7 +78,7 @@ class DriverSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Driver
-        fields = ('user', 'mileage')
+        fields = ('id', 'user', 'mileage')
 
 
 class StaffOrderSerializer(serializers.ModelSerializer):
@@ -115,11 +115,11 @@ class ManagerListSerializer(serializers.ModelSerializer):
 
 class DriverListSerializer(serializers.ModelSerializer):
     user = UserSerializer()
-    mileage = serializers.CharField(read_only=True)
+    mileage = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Driver
-        fields = ('user', 'mileage')
+        fields = ('id', 'user', 'mileage')
 
 
 class FuelingSerializer(serializers.ModelSerializer):
@@ -143,5 +143,5 @@ class CarSizeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Car
-        fields = ('width_trunk', 'length_trunk', 'height_trunk')
+        fields = ('id', 'title', 'load_capacity', 'width_trunk', 'length_trunk', 'height_trunk')
 

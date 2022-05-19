@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, Sum, Case, When
 from django.utils import timezone
 from rest_framework import permissions, viewsets, generics
 from rest_framework.filters import OrderingFilter
@@ -11,13 +11,13 @@ from .serializers import (
     DriverSerializer, AddDriverSerializer, StaffOrderSerializer, CarListSerializer, CarSizeSerializer
 )
 from django_filters.rest_framework import DjangoFilterBackend
-from .service import OrderFilter, RefuelingListFilter, DriversListFilter, ManagerListFilter, CarsListFilter
+from .service import OrderFilter, RefuelingListFilter, DriversListFilter, ManagerListFilter
 from .models import Order, Fueling, Car, Repair, Driver, Manager
 
 
-class StaffOrderView(generics.CreateAPIView):
-    """ Add order for customer """
-    queryset = Order.objects.filter(status=Order.STATUS_NEW)
+class StaffOrderView(viewsets.ModelViewSet):
+    """ CRUD order for staff """
+    queryset = Order.objects.all()
     permission_classes = (permissions.AllowAny,)
     serializer_class = StaffOrderSerializer
 
@@ -39,17 +39,33 @@ class OrderListViewSet(viewsets.ModelViewSet):
 
 
 class DriverListViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Driver.objects.all()
+    queryset = Driver.objects.distinct()
     permission_classes = [permissions.IsAdminUser]
     serializer_class = DriverListSerializer
-    filter_backends = (DjangoFilterBackend,)
-    # filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filterset_class = DriversListFilter
-    # ordering_fields = ['mileage']
+
+    # filter_backends = (DjangoFilterBackend,)
+    # filterset_class = DriversListFilter
+
+    def get_queryset(self):
+        sort_mileage = sorted(self.queryset, key=lambda d: float(d.mileage))
+        return sort_mileage
+
+    def get(self, request, *args, **kwargs):
+        sort_mileage = list()
+        # product_weight = self.request.query_params.get('product_weight', None)
+        # product_width = self.request.query_params.get('product_width', None)
+        # product_length = self.request.query_params.get('product_length', None)
+        # product_height = self.request.query_params.get('product_height', None)
+
+        for orders__car in Driver.objects.filter(orders__status=Order.STATUS_DONE):
+            if driver__orders__car == orders__car:
+                sort_mileage.append(driver__orders__car)
+
+        data = DriverListSerializer(sort_mileage, many=True).data
 
 
 class ManagerViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Manager.objects.all()
+    queryset = Manager.objects.distinct()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ManagerListSerializer
     filter_backends = (DjangoFilterBackend,)
@@ -98,23 +114,20 @@ class AddRepairView(generics.CreateAPIView):
     serializer_class = AddRepairSerializer
 
 
-class CarsViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Car.objects.filter(is_repair=False).order_by('load_capacity')
+class CarsListAPIView(APIView):
     permission_classes = [permissions.IsAdminUser]
-    serializer_class = ShortCarListSerializer
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = CarsListFilter
-
-
-class CarsListView(APIView):
 
     def get(self, request, *args, **kwargs):
-        cars = Car.objects.all()
-        for key, value in CarSizeSerializer().data.items():
-            pass
+        necessary_cars = list()
+        product_weight = self.request.query_params.get('product_weight', None)
+        product_width = self.request.query_params.get('product_width', None)
+        product_length = self.request.query_params.get('product_length', None)
+        product_height = self.request.query_params.get('product_height', None)
 
-        serializer = CarSizeSerializer(cars, many=True)
+        for car in Car.objects.filter(load_capacity__gte=int(product_weight)):
+            if car.dimensions >= sorted([int(product_width), int(product_length), int(product_height)]):
+                necessary_cars.append(car)
 
-        return Response(serializer.data)
+        data = CarSizeSerializer(necessary_cars, many=True).data
 
-
+        return Response(data)

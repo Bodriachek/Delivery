@@ -89,8 +89,12 @@ class Car(models.Model):
         distances = self.orders.filter(status=Order.STATUS_DONE).values_list('total_distance', flat=True)
         return sum(distances)
 
+    @property
+    def dimensions(self):
+        return sorted([self.width_trunk, self.length_trunk, self.height_trunk])
+
     def __str__(self):
-        return f'Id {self.id}: {self.title}'
+        return self.title
 
 
 class Repair(models.Model):
