@@ -1,5 +1,7 @@
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from rest_framework.validators import UniqueForDateValidator
 
 from delivery.models import Order, Fueling, Car, Repair, Driver, Manager
 from rest_framework import serializers
@@ -15,6 +17,12 @@ class RepairListSerializer(serializers.ModelSerializer):
 
 class AddRepairSerializer(serializers.ModelSerializer):
     """ Список ремонтів """
+
+    def validate(self, data):
+        if data['deadline'] < timezone.now():
+            raise serializers.ValidationError(_("Unable to repair in the past"))
+        return data
+
     class Meta:
         model = Repair
         fields = '__all__'
@@ -43,18 +51,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'email')
 
 
-class AddDriverSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Driver
-        fields = '__all__'
-
-
 class ShortCarListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Car
-        fields = ('id', 'title', 'state_number', 'width_trunk', 'length_trunk', 'height_trunk')
+        fields = ('id', 'title', 'state_number')
 
 
 class CarListSerializer(serializers.ModelSerializer):
@@ -82,11 +83,25 @@ class DriverSerializer(serializers.ModelSerializer):
 
 
 class StaffOrderSerializer(serializers.ModelSerializer):
-    """ Create and update order for staff """
+    """ CRUD order for staff """
+    validators = [
+        UniqueForDateValidator(
+            queryset=Order.objects.all(),
+            field='car',
+            date_field='date_trip'
+        ),
+        UniqueForDateValidator(
+            queryset=Order.objects.all(),
+            field='driver',
+            date_field='date_trip'
+        )
+    ]
+
     def validate(self, data):
-        # check type fuel
         if str(data['car'].driver_class) not in data['driver'].driver_class:
             raise serializers.ValidationError(_("This driver can't drive this car"))
+        elif data['date_trip'] < timezone.now():
+            raise serializers.ValidationError(_("Unable to order in the past"))
         return data
 
     class Meta:
@@ -94,7 +109,7 @@ class StaffOrderSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class OrderListSerializer(serializers.ModelSerializer):
+class FutureOrderListSerializer(serializers.ModelSerializer):
     """ List order for staff """
     manager = ManagerSerializer(read_only=True)
     driver = DriverSerializer(read_only=True)
@@ -123,7 +138,6 @@ class DriverListSerializer(serializers.ModelSerializer):
 
 
 class FuelingSerializer(serializers.ModelSerializer):
-    driver = DriverSerializer()
     car = ShortCarListSerializer()
 
     class Meta:
@@ -133,6 +147,10 @@ class FuelingSerializer(serializers.ModelSerializer):
 
 class CreateOrderSerializer(serializers.ModelSerializer):
     """ Add order for customer """
+    def validate(self, data):
+        if data['date_trip'] < timezone.now():
+            raise serializers.ValidationError(_("Unable to order in the past"))
+        return data
 
     class Meta:
         model = Order
@@ -144,4 +162,3 @@ class CarSizeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Car
         fields = ('id', 'title', 'load_capacity', 'width_trunk', 'length_trunk', 'height_trunk')
-

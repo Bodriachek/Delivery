@@ -7,14 +7,14 @@ from multiselectfield import MultiSelectField
 
 
 class Manager(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='manager')
 
     def __str__(self):
         return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
 
 
 class Driver(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='driver')
 
     DRIVER_CLASS_B = 1
     DRIVER_CLASS_CHOICES = (
@@ -37,7 +37,7 @@ class Car(models.Model):
     title = models.CharField(max_length=150, blank=True, null=True)
     state_number = models.CharField(max_length=10, null=True)
     driver_class = models.PositiveIntegerField(choices=Driver.DRIVER_CLASS_CHOICES, default=Driver.DRIVER_CLASS_B)
-    driver = models.OneToOneField(Driver, on_delete=models.CASCADE)
+    driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True)
     load_capacity = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -99,10 +99,10 @@ class Car(models.Model):
 
 class Repair(models.Model):
     car = models.ForeignKey(
-        Car, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=True)
+        Car, on_delete=models.CASCADE, limit_choices_to=Q(is_repair=True), related_name='repairs'
     )
     what_repair = models.CharField(max_length=200)
-    deadline = models.DateField(default=timezone.now())
+    deadline = models.DateTimeField(default=timezone.now())
     cost = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -134,18 +134,13 @@ class Order(models.Model):
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20, default='+380')
     address = models.CharField(max_length=255)
-    date_trip = models.DateField(default=timezone.now())
-    total_distance = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        help_text='In kilometers'
-    )
+    date_trip = models.DateTimeField(default=timezone.now())
+    total_distance = models.DecimalField(max_digits=12, decimal_places=2, help_text='In kilometers')
 
 
 class Fueling(TimeStampedModel):
-    driver = models.ForeignKey(Driver, on_delete=models.CASCADE, null=True)
-    car = models.ForeignKey(Car, on_delete=models.CASCADE, null=True, related_name='car')
-    type_fuel = models.CharField(max_length=20, choices=Car.TYPE_OF_FUEL_CHOICES, null=True)
+    car = models.ForeignKey(Car, on_delete=models.PROTECT, related_name='car')
+    type_fuel = models.CharField(max_length=20, choices=Car.TYPE_OF_FUEL_CHOICES)
     amount_fuel = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -157,4 +152,3 @@ class Fueling(TimeStampedModel):
         help_text='In UAH'
     )
     fuel_check = models.ImageField(upload_to='checks/', unique=True)
-

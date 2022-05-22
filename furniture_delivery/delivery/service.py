@@ -12,9 +12,11 @@ class OrderFilter(filters.FilterSet):
 
 
 class RefuelingListFilter(filters.FilterSet):
+    created = filters.DateRangeFilter()
+
     class Meta:
         model = Fueling
-        fields = ['driver', 'created']
+        fields = ['car', 'car__driver', 'created']
 
 
 class DriversListFilter(filters.FilterSet):
@@ -29,4 +31,3 @@ class ManagerListFilter(filters.FilterSet):
     class Meta:
         model = Manager
         fields = ['orders__driver']
-

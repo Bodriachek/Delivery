@@ -1,133 +1,186 @@
-from django.db.models import Q, Sum, Case, When
+from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from rest_framework import permissions, viewsets, generics
-from rest_framework.filters import OrderingFilter
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
+from .models import Order, Fueling, Car, Repair, Driver, Manager
+from .permissions import IsSuperUser, IsAdminOrReadOnly
 from .serializers import (
     CreateOrderSerializer, FuelingSerializer, DriverListSerializer, ManagerListSerializer,
-    ShortCarListSerializer, OrderListSerializer, AddFuelingSerializer, RepairListSerializer, AddRepairSerializer,
-    DriverSerializer, AddDriverSerializer, StaffOrderSerializer, CarListSerializer, CarSizeSerializer
+    FutureOrderListSerializer, AddFuelingSerializer, RepairListSerializer, AddRepairSerializer,
+    DriverSerializer, StaffOrderSerializer, CarSizeSerializer
 )
-from django_filters.rest_framework import DjangoFilterBackend
-from .service import OrderFilter, RefuelingListFilter, DriversListFilter, ManagerListFilter
-from .models import Order, Fueling, Car, Repair, Driver, Manager
+from .service import OrderFilter, RefuelingListFilter, ManagerListFilter
 
 
 class StaffOrderView(viewsets.ModelViewSet):
     """ CRUD order for staff """
     queryset = Order.objects.all()
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = [IsAdminOrReadOnly]
     serializer_class = StaffOrderSerializer
+
+    def get_queryset(self):
+        """Return object for current authenticated user only"""
+        if self.request.user.is_superuser:
+            return self.queryset.all()
+        else:
+            return self.queryset.filter(
+                Q(driver__user=self.request.user) | Q(manager__user=self.request.user)
+            )
+
+
+class FutureOrderListView(generics.ListAPIView):
+    """ Change order, for staff """
+    queryset = Order.objects.filter(status=Order.STATUS_PREPARE_TO_SHIP)
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = FutureOrderListSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = OrderFilter
+
+    def get_queryset(self):
+        """Return object for current authenticated user only"""
+        if self.request.user.is_superuser:
+            return self.queryset.all()
+        else:
+            return self.queryset.filter(
+                Q(car__driver__user=self.request.user)
+            )
 
 
 class AddOrderView(generics.CreateAPIView):
     """ Add order for customer """
-    queryset = Order.objects.filter(status=Order.STATUS_NEW)
-    permission_classes = (permissions.AllowAny,)
+    queryset = Order.objects.all()
+    permission_classes = [permissions.AllowAny]
     serializer_class = CreateOrderSerializer
 
 
-class OrderListViewSet(viewsets.ModelViewSet):
-    """ Change order, for staff """
-    queryset = Order.objects.filter(status=Order.STATUS_PREPARE_TO_SHIP)
-    permission_classes = [permissions.IsAdminUser]
-    serializer_class = OrderListSerializer
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = OrderFilter
-
-
 class DriverListViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Driver.objects.distinct()
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUser]
     serializer_class = DriverListSerializer
 
-    # filter_backends = (DjangoFilterBackend,)
-    # filterset_class = DriversListFilter
-
     def get_queryset(self):
-        sort_mileage = sorted(self.queryset, key=lambda d: float(d.mileage))
+        driver_list = list()
+
+        query_params = self.request.query_params
+
+        manager = query_params.get('manager')
+        car = query_params.get('car')
+
+        for driver in Driver.objects.filter(
+                (Q(orders__status=Order.STATUS_DONE)) &
+                (Q(orders__manager=manager) | Q(orders__car=car))).distinct():
+            driver_list.append(driver)
+
+        sort_mileage = sorted(driver_list, key=lambda driver: float(driver.mileage))
         return sort_mileage
-
-    def get(self, request, *args, **kwargs):
-        sort_mileage = list()
-        # product_weight = self.request.query_params.get('product_weight', None)
-        # product_width = self.request.query_params.get('product_width', None)
-        # product_length = self.request.query_params.get('product_length', None)
-        # product_height = self.request.query_params.get('product_height', None)
-
-        for orders__car in Driver.objects.filter(orders__status=Order.STATUS_DONE):
-            if driver__orders__car == orders__car:
-                sort_mileage.append(driver__orders__car)
-
-        data = DriverListSerializer(sort_mileage, many=True).data
 
 
 class ManagerViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Manager.objects.distinct()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsSuperUser]
     serializer_class = ManagerListSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ManagerListFilter
 
 
 class FuelingViewSet(viewsets.ReadOnlyModelViewSet):
-    """Реєстрація та список заправок"""
-    queryset = Fueling.objects.filter(created__lte=timezone.now())
-    permission_classes = [permissions.IsAdminUser]
+    """Список заправок"""
+    queryset = Fueling.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = FuelingSerializer
-    filter_backends = (DjangoFilterBackend)
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = RefuelingListFilter
+
+    def get_queryset(self):
+        """Return object for current authenticated user only"""
+        if self.request.user.is_superuser:
+            return self.queryset.all()
+        else:
+            return self.queryset.filter(
+                Q(car__driver__user=self.request.user)
+            )
 
 
 class AddFuelingView(generics.CreateAPIView):
     """Реєстрація та список заправок"""
     queryset = Fueling.objects.all()
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = AddFuelingSerializer
+
+    def get_queryset(self):
+        """Return object for current authenticated user only"""
+        if self.request.user.is_superuser:
+            return self.queryset.all()
+        else:
+            return self.queryset.filter(
+                Q(car__driver__user=self.request.user)
+            )
 
 
 class RepairsViewSet(viewsets.ReadOnlyModelViewSet):
     """ Ремонти """
     queryset = Repair.objects.all()
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = RepairListSerializer
+
+    def get_queryset(self):
+        """Return object for current authenticated user only"""
+        if self.request.user.is_superuser:
+            return self.queryset.all()
+        else:
+            return self.queryset.filter(
+                Q(car__driver__user=self.request.user)
+            )
 
 
 class DriverCarRepairViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Driver.objects.filter(car__is_repair=True)
-    permissions_classes = [permissions.IsAdminUser]
+    permissions_classes = [permissions.IsAuthenticated]
     serializer_class = DriverSerializer
 
-
-class AddDriverView(generics.CreateAPIView):
-    queryset = Driver.objects.all()
-    permissions_classes = [permissions.IsAdminUser]
-    serializer_class = AddDriverSerializer
+    def get_queryset(self):
+        """Return object for current authenticated user only"""
+        if self.request.user.is_staff:
+            return self.queryset.all()
+        else:
+            return self.queryset.filter(
+                Q(car__driver__user=self.request.user)
+            )
 
 
 class AddRepairView(generics.CreateAPIView):
     """ Ремонти """
     queryset = Repair.objects.all()
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = AddRepairSerializer
 
+    def get_queryset(self):
+        """Return object for current authenticated user only"""
+        if self.request.user.is_superuser:
+            return self.queryset.all()
+        else:
+            return self.queryset.filter(
+                Q(car__driver__user=self.request.user)
+            )
 
-class CarsListAPIView(APIView):
-    permission_classes = [permissions.IsAdminUser]
 
-    def get(self, request, *args, **kwargs):
+class CarsListViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CarSizeSerializer
+
+    def get_queryset(self):
         necessary_cars = list()
-        product_weight = self.request.query_params.get('product_weight', None)
-        product_width = self.request.query_params.get('product_width', None)
-        product_length = self.request.query_params.get('product_length', None)
-        product_height = self.request.query_params.get('product_height', None)
 
-        for car in Car.objects.filter(load_capacity__gte=int(product_weight)):
+        query_params = self.request.query_params
+
+        product_weight = query_params.get('product_weight')
+        product_width = query_params.get('product_width')
+        product_length = query_params.get('product_length')
+        product_height = query_params.get('product_height')
+
+        for car in Car.objects.filter(
+                Q(load_capacity__gte=int(product_weight)) & Q(is_repair=False)).distinct():
             if car.dimensions >= sorted([int(product_width), int(product_length), int(product_height)]):
                 necessary_cars.append(car)
 
-        data = CarSizeSerializer(necessary_cars, many=True).data
-
-        return Response(data)
+        sort_load_capacity = sorted(necessary_cars, key=lambda car: float(car.load_capacity))
+        return sort_load_capacity
