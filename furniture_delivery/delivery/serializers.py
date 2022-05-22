@@ -154,7 +154,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        exclude = ('id', 'status', 'manager', 'car', 'driver', 'total_distance')
+        exclude = ('status', 'manager', 'car', 'driver', 'total_distance')
 
 
 class CarSizeSerializer(serializers.ModelSerializer):

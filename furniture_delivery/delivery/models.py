@@ -9,8 +9,8 @@ from multiselectfield import MultiSelectField
 class Manager(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='manager')
 
-    def __str__(self):
-        return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
+    # def __str__(self):
+    #     return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
 
 
 class Driver(models.Model):
@@ -29,8 +29,8 @@ class Driver(models.Model):
         distances = self.orders.filter(status=Order.STATUS_DONE).values_list('total_distance', flat=True)
         return sum(distances)
 
-    def __str__(self):
-        return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
+    # def __str__(self):
+    #     return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
 
 
 class Car(models.Model):
@@ -89,8 +89,8 @@ class Car(models.Model):
     def dimensions(self):
         return sorted([self.width_trunk, self.length_trunk, self.height_trunk])
 
-    def __str__(self):
-        return self.title
+    # def __str__(self):
+    #     return self.title
 
 
 class Repair(models.Model):
@@ -118,20 +118,20 @@ class Order(models.Model):
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
     product = models.CharField(max_length=255)
-    manager = models.ForeignKey(Manager, on_delete=models.PROTECT, related_name='orders')
+    manager = models.ForeignKey(Manager, on_delete=models.PROTECT, related_name='orders', null=True)
     car = models.ForeignKey(
         Car, on_delete=models.PROTECT, limit_choices_to=Q(is_repair=False),
-        related_name='orders'
+        related_name='orders', null=True
     )
     driver = models.ForeignKey(
         Driver, on_delete=models.PROTECT,
-        related_name='orders'
+        related_name='orders', null=True
     )
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20, default='+380')
     address = models.CharField(max_length=255)
     date_trip = models.DateTimeField(default=timezone.now())
-    total_distance = models.DecimalField(max_digits=12, decimal_places=2, help_text='In kilometers')
+    total_distance = models.DecimalField(max_digits=12, decimal_places=2, help_text='In kilometers', null=True)
 
 
 class Fueling(TimeStampedModel):

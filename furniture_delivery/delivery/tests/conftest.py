@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 def django_db_setup(django_db_setup, django_db_blocker):
     with django_db_blocker.unblock():
         baker.make(
-            User, is_superuser=True, username='admin', email='admin@example.com', first_name='Main admin'
+            User, is_superuser=True, is_staff=True, username='admin', email='admin@example.com', first_name='Main admin'
         )
 
 
@@ -32,7 +32,8 @@ def driver(user):
 @pytest.fixture
 def car(driver):
     return baker.make(
-        Car, driver=driver, type_fuel=Car.GAS, load_capacity=500, width_trunk=3, length_trunk=15, height_trunk=2
+        Car, title='Jeep', driver=driver, type_fuel=Car.GAS,
+        load_capacity=500, width_trunk=3, length_trunk=15, height_trunk=2
     )
 
 
