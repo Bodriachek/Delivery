@@ -37,7 +37,7 @@ class Car(models.Model):
     title = models.CharField(max_length=150, blank=True, null=True)
     state_number = models.CharField(max_length=10, null=True)
     driver_class = models.PositiveIntegerField(choices=Driver.DRIVER_CLASS_CHOICES, default=Driver.DRIVER_CLASS_B)
-    driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True)
+    driver = models.ForeignKey(Driver, on_delete=models.PROTECT)
     load_capacity = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -71,11 +71,7 @@ class Car(models.Model):
     )
 
     type_fuel = models.PositiveSmallIntegerField(choices=TYPE_OF_FUEL_CHOICES)
-    tank_size = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        help_text='In liters'
-    )
+    tank_size = models.PositiveSmallIntegerField(help_text='In liters')
     fuel_consumption = models.DecimalField(
         max_digits=12,
         decimal_places=2
@@ -125,11 +121,11 @@ class Order(models.Model):
     manager = models.ForeignKey(Manager, on_delete=models.PROTECT, related_name='orders')
     car = models.ForeignKey(
         Car, on_delete=models.PROTECT, limit_choices_to=Q(is_repair=False),
-        related_name='orders', unique_for_date='date_trip'
+        related_name='orders'
     )
     driver = models.ForeignKey(
         Driver, on_delete=models.PROTECT,
-        related_name='orders', unique_for_date='date_trip'
+        related_name='orders'
     )
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20, default='+380')
@@ -139,16 +135,12 @@ class Order(models.Model):
 
 
 class Fueling(TimeStampedModel):
-    car = models.ForeignKey(Car, on_delete=models.PROTECT, related_name='car')
+    car = models.ForeignKey(Car, on_delete=models.PROTECT, related_name='fueling')
     type_fuel = models.CharField(max_length=20, choices=Car.TYPE_OF_FUEL_CHOICES)
-    amount_fuel = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        help_text='In liters'
-    )
+    amount_fuel = models.PositiveSmallIntegerField(help_text='In liters')
     price = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         help_text='In UAH'
     )
-    fuel_check = models.ImageField(upload_to='checks/', unique=True)
+    fuel_check = models.ImageField(upload_to='checks/')

@@ -85,7 +85,7 @@ class ManagerViewSet(viewsets.ReadOnlyModelViewSet):
 class FuelingViewSet(viewsets.ReadOnlyModelViewSet):
     """Список заправок"""
     queryset = Fueling.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsSuperUser]
     serializer_class = FuelingSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RefuelingListFilter
