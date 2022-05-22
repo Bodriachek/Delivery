@@ -41,9 +41,7 @@ class FutureOrderListView(generics.ListAPIView):
         if self.request.user.is_superuser:
             return self.queryset.all()
         else:
-            return self.queryset.filter(
-                Q(car__driver__user=self.request.user)
-            )
+            return self.queryset.filter(driver__user=self.request.user)
 
 
 class AddOrderView(generics.CreateAPIView):
@@ -95,9 +93,7 @@ class FuelingViewSet(viewsets.ReadOnlyModelViewSet):
         if self.request.user.is_superuser:
             return self.queryset.all()
         else:
-            return self.queryset.filter(
-                Q(car__driver__user=self.request.user)
-            )
+            return self.queryset.filter(driver__user=self.request.user)
 
 
 class AddFuelingView(generics.CreateAPIView):
@@ -105,15 +101,6 @@ class AddFuelingView(generics.CreateAPIView):
     queryset = Fueling.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AddFuelingSerializer
-
-    def get_queryset(self):
-        """Return object for current authenticated user only"""
-        if self.request.user.is_superuser:
-            return self.queryset.all()
-        else:
-            return self.queryset.filter(
-                Q(car__driver__user=self.request.user)
-            )
 
 
 class RepairsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -127,9 +114,7 @@ class RepairsViewSet(viewsets.ReadOnlyModelViewSet):
         if self.request.user.is_superuser:
             return self.queryset.all()
         else:
-            return self.queryset.filter(
-                Q(car__driver__user=self.request.user)
-            )
+            return self.queryset.filter(car__driver__user=self.request.user)
 
 
 class DriverCarRepairViewSet(viewsets.ReadOnlyModelViewSet):
@@ -142,9 +127,7 @@ class DriverCarRepairViewSet(viewsets.ReadOnlyModelViewSet):
         if self.request.user.is_staff:
             return self.queryset.all()
         else:
-            return self.queryset.filter(
-                Q(car__driver__user=self.request.user)
-            )
+            return self.queryset.filter(car__driver__user=self.request.user)
 
 
 class AddRepairView(generics.CreateAPIView):
@@ -152,15 +135,6 @@ class AddRepairView(generics.CreateAPIView):
     queryset = Repair.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AddRepairSerializer
-
-    def get_queryset(self):
-        """Return object for current authenticated user only"""
-        if self.request.user.is_superuser:
-            return self.queryset.all()
-        else:
-            return self.queryset.filter(
-                Q(car__driver__user=self.request.user)
-            )
 
 
 class CarsListViewSet(viewsets.ReadOnlyModelViewSet):

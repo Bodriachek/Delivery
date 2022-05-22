@@ -136,6 +136,7 @@ class Order(models.Model):
 
 class Fueling(TimeStampedModel):
     car = models.ForeignKey(Car, on_delete=models.PROTECT, related_name='fueling')
+    driver = models.ForeignKey(Driver, on_delete=models.PROTECT, related_name='fueling')
     type_fuel = models.CharField(max_length=20, choices=Car.TYPE_OF_FUEL_CHOICES)
     amount_fuel = models.PositiveSmallIntegerField(help_text='In liters')
     price = models.DecimalField(

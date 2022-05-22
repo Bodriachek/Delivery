@@ -51,7 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'email')
 
 
-class ShortCarListSerializer(serializers.ModelSerializer):
+class ShortCarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Car
@@ -113,7 +113,7 @@ class FutureOrderListSerializer(serializers.ModelSerializer):
     """ List order for staff """
     manager = ManagerSerializer(read_only=True)
     driver = DriverSerializer(read_only=True)
-    car = ShortCarListSerializer(read_only=True)
+    car = ShortCarSerializer(read_only=True)
 
     class Meta:
         model = Order
@@ -138,7 +138,7 @@ class DriverListSerializer(serializers.ModelSerializer):
 
 
 class FuelingSerializer(serializers.ModelSerializer):
-    car = ShortCarListSerializer()
+    car = ShortCarSerializer()
 
     class Meta:
         model = Fueling
