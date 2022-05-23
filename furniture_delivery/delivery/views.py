@@ -56,13 +56,11 @@ class DriverListViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DriverListSerializer
 
     def get_queryset(self):
-        driver_list = list()
 
         query_params = self.request.query_params
-
         manager = query_params.get('manager')
         car = query_params.get('car')
-
+        driver_list = list()
         for driver in Driver.objects.filter(
                 (Q(orders__status=Order.STATUS_DONE)) &
                 (Q(orders__manager=manager) | Q(orders__car=car))).distinct():
@@ -83,7 +81,7 @@ class ManagerViewSet(viewsets.ReadOnlyModelViewSet):
 class FuelingViewSet(viewsets.ReadOnlyModelViewSet):
     """Список заправок"""
     queryset = Fueling.objects.all()
-    permission_classes = [IsSuperUser]
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = FuelingSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RefuelingListFilter
@@ -152,7 +150,8 @@ class CarsListViewSet(viewsets.ReadOnlyModelViewSet):
         product_height = query_params.get('product_height')
 
         for car in Car.objects.filter(
-                Q(load_capacity__gte=int(product_weight)) & Q(is_repair=False)).distinct():
+                Q(load_capacity__gte=int(product_weight)) &
+                Q(is_repair=False)).distinct():
             if car.dimensions >= sorted([int(product_width), int(product_length), int(product_height)]):
                 necessary_cars.append(car)
 

@@ -9,9 +9,6 @@ from multiselectfield import MultiSelectField
 class Manager(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='manager')
 
-    # def __str__(self):
-    #     return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
-
 
 class Driver(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='driver')
@@ -29,8 +26,10 @@ class Driver(models.Model):
         distances = self.orders.filter(status=Order.STATUS_DONE).values_list('total_distance', flat=True)
         return sum(distances)
 
-    # def __str__(self):
-    #     return f'Id {self.id}: {self.user.first_name} {self.user.last_name}'
+    @property
+    def dates_future_orders(self):
+        dates_trips = self.orders.filter(status=Order.STATUS_PREPARE_TO_SHIP).values_list('date_trip', flat=True)
+        return dates_trips
 
 
 class Car(models.Model):
@@ -81,6 +80,11 @@ class Car(models.Model):
     is_repair = models.BooleanField(default=False)
 
     @property
+    def dates_future_orders(self):
+        dates_trips = self.orders.filter(status=Order.STATUS_PREPARE_TO_SHIP).values_list('date_trip', flat=True)
+        return dates_trips
+
+    @property
     def mileage(self):
         distances = self.orders.filter(status=Order.STATUS_DONE).values_list('total_distance', flat=True)
         return sum(distances)
@@ -88,9 +92,6 @@ class Car(models.Model):
     @property
     def dimensions(self):
         return sorted([self.width_trunk, self.length_trunk, self.height_trunk])
-
-    # def __str__(self):
-    #     return self.title
 
 
 class Repair(models.Model):
@@ -118,7 +119,10 @@ class Order(models.Model):
 
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES, default=STATUS_NEW)
     product = models.CharField(max_length=255)
-    manager = models.ForeignKey(Manager, on_delete=models.PROTECT, related_name='orders', null=True)
+    manager = models.ForeignKey(
+        Manager, on_delete=models.PROTECT,
+        related_name='orders', null=True
+    )
     car = models.ForeignKey(
         Car, on_delete=models.PROTECT, limit_choices_to=Q(is_repair=False),
         related_name='orders', null=True
@@ -135,8 +139,8 @@ class Order(models.Model):
 
 
 class Fueling(TimeStampedModel):
-    car = models.ForeignKey(Car, on_delete=models.PROTECT, related_name='fueling')
-    driver = models.ForeignKey(Driver, on_delete=models.PROTECT, related_name='fueling')
+    car = models.ForeignKey(Car, on_delete=models.SET_NULL, related_name='fueling', null=True)
+    driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, related_name='fueling', null=True)
     type_fuel = models.CharField(max_length=20, choices=Car.TYPE_OF_FUEL_CHOICES)
     amount_fuel = models.PositiveSmallIntegerField(help_text='In liters')
     price = models.DecimalField(

@@ -79,7 +79,7 @@ class DriverSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Driver
-        fields = ('id', 'user', 'mileage')
+        fields = ('id', 'user', 'mileage', 'dates')
 
 
 class StaffOrderSerializer(serializers.ModelSerializer):
@@ -161,4 +161,4 @@ class CarSizeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Car
-        fields = ('id', 'title', 'load_capacity', 'width_trunk', 'length_trunk', 'height_trunk')
+        fields = ('id', 'title', 'load_capacity', 'width_trunk', 'length_trunk', 'height_trunk', 'dates_future_orders')
