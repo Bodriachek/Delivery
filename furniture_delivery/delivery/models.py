@@ -148,4 +148,4 @@ class Fueling(TimeStampedModel):
         decimal_places=2,
         help_text='In UAH'
     )
-    fuel_check = models.ImageField(upload_to='checks/')
+    fuel_check = models.ImageField(upload_to='checks/', blank=True, null=True)
