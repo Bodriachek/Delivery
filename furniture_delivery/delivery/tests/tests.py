@@ -1,7 +1,8 @@
-from datetime import timedelta
-
 import pytest
+import json
 
+from datetime import timedelta
+from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.utils import timezone
 from model_bakery import baker
@@ -121,7 +122,7 @@ def test_path_order_past_date_error(api_client, car, driver, manager):
     }
 
 
-def test_path_order_unique_date_car_error(api_client, order2, car, driver, manager):
+def test_path_order_unique_date_car_error(api_client, order_date_check, car, driver, manager):
     user = User.objects.get(username='admin')
     api_client.force_login(user)
 
@@ -146,7 +147,7 @@ def test_path_order_unique_date_car_error(api_client, order2, car, driver, manag
     }
 
 
-def test_path_order_unique_date_driver_error(api_client, order2, car2, driver, manager):
+def test_path_order_unique_date_driver_error(api_client, order_date_check, car2, driver, manager):
     user = User.objects.get(username='admin')
     api_client.force_login(user)
 
@@ -274,4 +275,27 @@ def test_add_fueling_amount_fuel_error(api_client, car, driver):
             "The tank holds the maximum 50"
         ]
     }
+
+
+def test_view_cars(api_client, car):
+    user = User.objects.get(username='admin')
+    api_client.force_login(user)
+
+    resp = api_client.get('/api/v1/cars/?product_weight=400&product_width=3&product_length=2&product_height=1')
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.data
+
+    assert 'id' in data
+    del data['id']
+    assert 'dates_future_orders' in data
+    del data['dates_future_orders']
+
+    assert data == dict(OrderedDict({
+        "title": "Jeep",
+        "driver_class": 3,
+        "load_capacity": "800.00",
+        "width_trunk": "3.00",
+        "length_trunk": "15.00",
+        "height_trunk": "3.00",
+    }))
 
