@@ -44,6 +44,15 @@ def car(driver):
     return baker.make(
         Car, title='Jeep', driver=driver, type_fuel=Car.GAS, tank_size=50,
         driver_class=3,
+        load_capacity=300, width_trunk=1, length_trunk=2, height_trunk=2
+    )
+
+
+@pytest.fixture
+def car2(driver2):
+    return baker.make(
+        Car, title='Mercedes-benz', driver=driver2, type_fuel=Car.DIESEL, tank_size=50,
+        driver_class=2,
         load_capacity=500, width_trunk=3, length_trunk=15, height_trunk=2
     )
 
@@ -51,6 +60,11 @@ def car(driver):
 @pytest.fixture
 def order(driver, car):
     return baker.make(Order, driver=driver, car=car)
+
+
+@pytest.fixture
+def order2(driver, car):
+    return baker.make(Order, driver=driver, car=car, date_trip="2022-05-31T19:10:00+03:00")
 
 
 @pytest.fixture

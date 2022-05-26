@@ -121,6 +121,56 @@ def test_path_order_past_date_error(api_client, car, driver, manager):
     }
 
 
+def test_path_order_unique_date_car_error(api_client, order2, car, driver, manager):
+    user = User.objects.get(username='admin')
+    api_client.force_login(user)
+
+    order = baker.make(
+        Order, manager=manager, car=car, driver=driver, status=Order.STATUS_PREPARE_TO_SHIP,
+        product="Table", name="Petro", phone="777", address="Dim", total_distance=None
+    )
+
+    resp = api_client.patch(f'/api/v1/staff-order/{order.id}/', {
+        "product": "Table",
+        "car": car.id,
+        "driver": driver.id,
+        "manager": manager.id,
+        "date_trip": "2022-05-31T19:10:00+03:00"
+    })
+
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
+    assert resp.data == {
+        "car": [
+            "This field must be unique for the \"date_trip\" date."
+        ]
+    }
+
+
+def test_path_order_unique_date_driver_error(api_client, order2, car2, driver, manager):
+    user = User.objects.get(username='admin')
+    api_client.force_login(user)
+
+    order = baker.make(
+        Order, manager=manager, car=car2, driver=driver, status=Order.STATUS_PREPARE_TO_SHIP,
+        product="Table", name="Petro", phone="777", address="Dim", total_distance=None
+    )
+
+    resp = api_client.patch(f'/api/v1/staff-order/{order.id}/', {
+        "product": "Table",
+        "car": car2.id,
+        "driver": driver.id,
+        "manager": manager.id,
+        "date_trip": "2022-05-31T19:10:00+03:00"
+    })
+
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
+    assert resp.data == {
+        "driver": [
+            "This field must be unique for the \"date_trip\" date."
+        ]
+    }
+
+
 def test_add_fueling(api_client, car, driver):
     user = User.objects.get(username='admin')
     api_client.force_login(user)
