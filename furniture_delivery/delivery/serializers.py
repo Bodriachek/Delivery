@@ -161,4 +161,4 @@ class CarSizeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Car
-        fields = ('id', 'title', 'load_capacity', 'width_trunk', 'length_trunk', 'height_trunk', 'dates_future_orders')
+        fields = ('id', 'title', 'driver_class', 'load_capacity', 'width_trunk', 'length_trunk', 'height_trunk', 'dates_future_orders')

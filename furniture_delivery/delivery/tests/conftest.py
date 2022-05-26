@@ -1,7 +1,7 @@
 import pytest
 
 from django.contrib.auth.models import User
-from delivery.models import Driver, Car, Order
+from delivery.models import Driver, Car, Order, Manager
 from model_bakery import baker
 from rest_framework.test import APIClient
 
@@ -26,13 +26,24 @@ def user():
 
 @pytest.fixture
 def driver(user):
-    return baker.make(Driver, user=user)
+    return baker.make(Driver, user=user, driver_class=["1", "2", "3"],)
+
+
+@pytest.fixture
+def user_driver2():
+    return baker.make(User, first_name='First name', email='e@mail.com')
+
+
+@pytest.fixture
+def driver2(user_driver2):
+    return baker.make(Driver, user=user_driver2, driver_class=["1", "2"],)
 
 
 @pytest.fixture
 def car(driver):
     return baker.make(
-        Car, title='Jeep', driver=driver, type_fuel=Car.GAS,
+        Car, title='Jeep', driver=driver, type_fuel=Car.GAS, tank_size=50,
+        driver_class=3,
         load_capacity=500, width_trunk=3, length_trunk=15, height_trunk=2
     )
 
@@ -40,3 +51,14 @@ def car(driver):
 @pytest.fixture
 def order(driver, car):
     return baker.make(Order, driver=driver, car=car)
+
+
+@pytest.fixture
+def user_manager():
+    return baker.make(User, first_name='Name', email='manager@gmail.com', is_staff=True)
+
+
+@pytest.fixture
+def manager(user_manager):
+    return baker.make(Manager, user=user_manager)
+
