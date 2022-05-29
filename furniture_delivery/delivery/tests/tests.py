@@ -142,7 +142,7 @@ def test_path_order_unique_date_car_error(api_client, order_date_check, car, dri
     assert resp.status_code == status.HTTP_400_BAD_REQUEST
     assert resp.data == {
         "car": [
-            "This field must be unique for the \"date_trip\" date."
+            'This field must be unique for the "date_trip" date.'
         ]
     }
 
@@ -263,7 +263,7 @@ def test_add_fueling_amount_fuel_error(api_client, car, driver):
 
     resp = api_client.post('/api/v1/add-fueling/', {
         "type_fuel": car.type_fuel,
-        "amount_fuel": 100,
+        "amount_fuel": car.tank_size + 1,
         "price": 2500,
         "car": car.id,
         "driver": driver.id
@@ -272,30 +272,36 @@ def test_add_fueling_amount_fuel_error(api_client, car, driver):
     assert resp.status_code == status.HTTP_400_BAD_REQUEST
     assert resp.data == {
         "non_field_errors": [
-            "The tank holds the maximum 50"
+            f"The tank holds the maximum {car.tank_size}"
         ]
     }
 
 
-def test_view_cars(api_client, car):
+def test_view_cars(api_client, car, car2):
     user = User.objects.get(username='admin')
     api_client.force_login(user)
 
-    resp = api_client.get('/api/v1/cars/?product_weight=400&product_width=3&product_length=2&product_height=1')
+    resp = api_client.get(
+        '/api/v1/cars/?product_weight=400&product_width=3&product_length=2&product_height=1',
+        content_type='application/json'
+    )
     assert resp.status_code == status.HTTP_200_OK
-    data = resp.data
+    print(resp.data)
+    data = json.loads(json.dumps(resp.data))
 
-    assert 'id' in data
-    del data['id']
-    assert 'dates_future_orders' in data
-    del data['dates_future_orders']
+    for item in data:
+        assert 'id' in item
+        del item['id']
+        assert 'dates_future_orders' in item
+        del item['dates_future_orders']
 
-    assert data == dict(OrderedDict({
+    assert data == [{
         "title": "Jeep",
         "driver_class": 3,
         "load_capacity": "800.00",
         "width_trunk": "3.00",
         "length_trunk": "15.00",
         "height_trunk": "3.00",
-    }))
+    }]
+
 

@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 from model_utils.models import TimeStampedModel
 from multiselectfield import MultiSelectField
@@ -80,8 +80,11 @@ class Car(models.Model):
     is_repair = models.BooleanField(default=False)
 
     @property
-    def dates_future_orders(self):
-        dates_trips = self.orders.filter(status=Order.STATUS_PREPARE_TO_SHIP).values_list('date_trip', flat=True)
+    def dates_future_orders(self) -> QuerySet["Order"]:
+        from .serializers import FutureOrderListSerializer
+        dates_trips = FutureOrderListSerializer(
+            self.orders.filter(status=Order.STATUS_PREPARE_TO_SHIP).values_list('date_trip', flat=True), many=True
+        ).data
         return dates_trips
 
     @property
