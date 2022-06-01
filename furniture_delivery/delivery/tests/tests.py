@@ -277,7 +277,7 @@ def test_add_fueling_amount_fuel_error(api_client, car, driver):
     }
 
 
-def test_view_cars(api_client, car, car2):
+def test_view_cars(api_client, car, car2, car3):
     user = User.objects.get(username='admin')
     api_client.force_login(user)
 
@@ -285,8 +285,8 @@ def test_view_cars(api_client, car, car2):
         '/api/v1/cars/?product_weight=400&product_width=3&product_length=2&product_height=1',
         content_type='application/json'
     )
+
     assert resp.status_code == status.HTTP_200_OK
-    print(resp.data)
     data = json.loads(json.dumps(resp.data))
 
     for item in data:
@@ -294,14 +294,43 @@ def test_view_cars(api_client, car, car2):
         del item['id']
         assert 'dates_future_orders' in item
         del item['dates_future_orders']
+    print(data)
+    assert data == [
+        {
+            "driver_class": 2,
+            "height_trunk": "2.00",
+            "length_trunk": "5.00",
+            "load_capacity": "500.00",
+            "title": "Renault",
+            "width_trunk": "2.00",
+        },
+        {
+            "driver_class": 3,
+            "height_trunk": "3.00",
+            "length_trunk": "15.00",
+            "load_capacity": "800.00",
+            "title": "Jeep",
+            "width_trunk": "3.00",
+        },
+    ]
 
-    assert data == [{
-        "title": "Jeep",
-        "driver_class": 3,
-        "load_capacity": "800.00",
-        "width_trunk": "3.00",
-        "length_trunk": "15.00",
-        "height_trunk": "3.00",
-    }]
 
+def test_view_null_cars(api_client, car, car2, car3):
+    user = User.objects.get(username='admin')
+    api_client.force_login(user)
 
+    resp = api_client.get(
+        '/api/v1/cars/?product_weight=4000&product_width=3&product_length=20&product_height=1',
+        content_type='application/json'
+    )
+
+    assert resp.status_code == status.HTTP_200_OK
+    data = json.loads(json.dumps(resp.data))
+
+    for item in data:
+        assert 'id' in item
+        del item['id']
+        assert 'dates_future_orders' in item
+        del item['dates_future_orders']
+    print(data)
+    assert data == []
