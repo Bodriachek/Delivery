@@ -50,6 +50,16 @@ def driver3(user_driver3):
 
 
 @pytest.fixture
+def user_driver4():
+    return baker.make(User, first_name='First name', email='e@mail.com')
+
+
+@pytest.fixture
+def driver4(user_driver4):
+    return baker.make(Driver, user=user_driver4, driver_class=["1", "2"],)
+
+
+@pytest.fixture
 def car(driver):
     return baker.make(
         Car, title='Jeep', driver=driver, type_fuel=Car.GAS, tank_size=100,
@@ -73,6 +83,15 @@ def car3(driver3):
         Car, title='Renault', driver=driver3, type_fuel=Car.GASOLINE, tank_size=80,
         driver_class=2,
         load_capacity=500, width_trunk=2, length_trunk=5, height_trunk=2
+    )
+
+
+@pytest.fixture
+def car4(driver4):
+    return baker.make(
+        Car, title='Renault', driver=driver4, type_fuel=Car.GASOLINE, tank_size=80,
+        driver_class=2, is_repair=True,
+        load_capacity=300, width_trunk=2, length_trunk=2, height_trunk=1
     )
 
 

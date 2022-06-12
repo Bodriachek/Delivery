@@ -334,3 +334,31 @@ def test_view_null_cars(api_client, car, car2, car3):
         del item['dates_future_orders']
     print(data)
     assert data == []
+
+
+def test_add_repair(api_client, car4, driver4):
+    user = User.objects.get(username='admin')
+    api_client.force_login(user)
+
+    deadline = timezone.now() + timedelta(days=1)
+
+    resp = api_client.post('/api/v1/add-repair/', {
+        "what_repair": "Engine",
+        "deadline": deadline,
+        "cost": 5000,
+        "car": car4.id
+    })
+    assert resp.status_code == status.HTTP_201_CREATED
+    data = resp.data
+
+    assert 'id' in data
+    del data['id']
+    assert 'deadline' in data
+    del data['deadline']
+
+    assert data == {
+        "what_repair": "Engine",
+        "cost": "5000.00",
+        "car": car4.id
+    }
+
